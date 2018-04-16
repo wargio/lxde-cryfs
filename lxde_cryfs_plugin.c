@@ -1,41 +1,16 @@
 #include "lxde_cryfs_plugin.h"
-#include "lxde_cryfs_mount.h"
+#include "lxde_cryfs_config.h"
+#include "lxde_cryfs_menu.h"
 
 static int m_plugin_instance = 0;
 
-void add_menu_separator(lxde_cryfs_plugin_t *plugin){
-	if (!plugin || !plugin->menu) {
-		return;
-	}
-	gtk_menu_shell_append(GTK_MENU_SHELL(plugin->menu), gtk_separator_menu_item_new());
-}
-
-void add_menu_item(lxde_cryfs_plugin_t *plugin, const char* name, GCallback callback, gpointer userdata) {
-	if (!plugin || !plugin->menu || !name) {
-		return;
-	}
-	GtkWidget* item = gtk_menu_item_new_with_label (name);
-	gtk_menu_shell_append (GTK_MENU_SHELL(plugin->menu), item);
-	if (callback) {
-		g_signal_connect (item, "activate", callback, userdata);
-	}
-}
-
-void on_mount_pressed (GtkWidget *item, gpointer userdata) {
-	(void)item;
-	GtkWidget *window = lxde_cryfs_mount_window ();
-
-	gtk_widget_show_all(window);
-	g_print ("Mount me!!!\n");
-}
-
-GtkWidget *lxde_cyfs_constructor(LXPanel *panel, config_setting_t *settings) {
+GtkWidget *lxde_cryfs_constructor(LXPanel *panel, config_setting_t *settings) {
 	/* panel is a pointer to the panel and
 		settings is a pointer to the configuration data
 		since we don't use it, we'll make sure it doesn't
 		give us an error at compilation time */
 	(void)panel;
-	(void)settings;
+
 
 	// allocate our private structure instance
 	lxde_cryfs_plugin_t *plugin = g_new0 (lxde_cryfs_plugin_t, 1);
@@ -51,14 +26,16 @@ GtkWidget *lxde_cyfs_constructor(LXPanel *panel, config_setting_t *settings) {
 	// set the systray to be visible
 	gtk_widget_show (plugin->systray);
 
-	plugin->menu = gtk_menu_new ();
-	add_menu_item (plugin, "Mount..", (GCallback) on_mount_pressed, 0);
-	add_menu_separator (plugin);
-	add_menu_item (plugin, "FSNAME", (GCallback) 0, 0);
-
 	// need to create a container to be able to set a border
 	GtkWidget *p = gtk_event_box_new ();
 	plugin->p = p;
+
+	plugin->settings.default_path = 0;
+	plugin->settings.blocksize = 0;
+	plugin->settings.unmount_idle = 0;
+	plugin->settings.config = settings;
+
+	lxde_cryfs_load_default_settings (&plugin->settings);
 
 	// our widget doesn't have a window...
 	// it is usually illegal to call gtk_widget_set_has_window() from application but for GtkEventBox it doesn't hurt
@@ -82,16 +59,33 @@ GtkWidget *lxde_cyfs_constructor(LXPanel *panel, config_setting_t *settings) {
 	return p;
 }
 
-
-gboolean lxde_cyfs_button_press_event(GtkWidget *widget, GdkEventButton *event, LXPanel *panel) {
-	if (event->type == GDK_2BUTTON_PRESS && event->button == EVENT_MOUSE_BUTTON_PRESS_RIGHT) {
+gboolean lxde_cryfs_button_press_event(GtkWidget *widget, GdkEventButton *event, LXPanel *panel) {
+	if (event->type == GDK_BUTTON_PRESS && event->button == EVENT_MOUSE_BUTTON_PRESS_RIGHT) {
 		lxde_cryfs_plugin_t* plugin = (lxde_cryfs_plugin_t*) lxpanel_plugin_get_data(widget);
-		gtk_widget_show_all(plugin->menu);
-		gtk_menu_popup(GTK_MENU(plugin->menu), NULL, NULL, NULL, NULL, (event != NULL) ? event->button : 0, gdk_event_get_time((GdkEvent*) event));
+		GtkWidget* menu = lxde_cryfs_mouse_menu (plugin);
+		gtk_widget_show_all(menu);
+		gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, (event != NULL) ? event->button : 0, gdk_event_get_time((GdkEvent*) event));
+		gtk_widget_destroy(menu);
 		return TRUE;
 	}
 	return FALSE;
 }
+
+static gboolean apply_configuration(gpointer userdata) {
+	lxde_cryfs_settings_t *settings = (lxde_cryfs_settings_t*) userdata;
+	lxde_cryfs_update_settings (settings);
+	return TRUE;
+}
+
+static GtkWidget *lxde_cryfs_config(LXPanel *panel, GtkWidget *p) {
+    lxde_cryfs_plugin_t *plugin = (lxde_cryfs_plugin_t*) lxpanel_plugin_get_data(p);
+    return lxpanel_generic_config_dlg("CryFS", panel, apply_configuration, (gpointer) &plugin->settings,
+            "Default Directory",          &plugin->settings.default_path, CONF_TYPE_DIRECTORY_ENTRY,
+            "Block Size (default 32768)", &plugin->settings.blocksize, CONF_TYPE_STR,
+            "Unmount Idle (minutes)",     &plugin->settings.unmount_idle, CONF_TYPE_STR,
+            NULL);
+}
+
 
 FM_DEFINE_MODULE(lxpanel_gtk, lxde_cryfs)
 
@@ -100,6 +94,7 @@ FM_DEFINE_MODULE(lxpanel_gtk, lxde_cryfs)
 LXPanelPluginInit fm_module_init_lxpanel_gtk = {
 	.name = "CryFS Mount/Unmount",
 	.description = "Handles CryFS Mountpoints",
-	.new_instance = lxde_cyfs_constructor,
-	.button_press_event = lxde_cyfs_button_press_event
+	.config = lxde_cryfs_config,
+	.new_instance = lxde_cryfs_constructor,
+	.button_press_event = lxde_cryfs_button_press_event
 };

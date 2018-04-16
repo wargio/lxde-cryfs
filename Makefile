@@ -1,16 +1,18 @@
-SOURCE := lxde_cryfs_plugin.c lxde_cryfs_mount.c lxde_cryfs_dialog.c
+SOURCE := lxde_cryfs_plugin.c lxde_cryfs_mount.c lxde_cryfs_dialog.c lxde_cryfs_config.c lxde_cryfs_menu.c
+LIBNAME := lxde_cryfs_plugin.so
 
 all:
-	gcc -Wall `pkg-config --cflags gtk+-2.0 lxpanel` -shared -fPIC $(SOURCE) -o lxde_cryfs_plugin.so `pkg-config --libs lxpanel`
+	@echo "[LD]" $(LIBNAME)
+	@gcc -Wall `pkg-config --cflags gtk+-2.0 lxpanel` -shared -fPIC $(SOURCE) -o $(LIBNAME) `pkg-config --libs lxpanel`
 
-install:
-	cp lxde_cryfs_plugin.so /usr/lib/lxpanel/plugins
+install: uninstall
+	cp $(LIBNAME) /usr/lib/lxpanel/plugins
 
 uninstall:
-	rm /usr/lib/lxpanel/plugins/lxde_cryfs_plugin.so
+	rm /usr/lib/lxpanel/plugins/$(LIBNAME)
 
 restart-panel:
 	lxpanelctl restart
 
 clean:
-	rm lxde_cryfs_plugin.so
+	@rm $(LIBNAME)
