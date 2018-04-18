@@ -17,6 +17,7 @@ typedef struct {
 	int id;
 	GtkWidget *p;
 	GtkWidget *systray;
+	GtkWidget* menu;
 #ifdef LXDE_CRYFS_PLUGIN_LABEL
 	GtkWidget *label;
 #endif

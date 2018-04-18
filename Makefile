@@ -1,4 +1,4 @@
-SOURCE := lxde_cryfs_plugin.c lxde_cryfs_mount.c lxde_cryfs_dialog.c lxde_cryfs_config.c lxde_cryfs_menu.c
+SOURCE := lxde_cryfs_plugin.c lxde_cryfs_mount.c lxde_cryfs_dialog.c lxde_cryfs_config.c lxde_cryfs_menu.c lxde_cryfs_exec.c
 LIBNAME := lxde_cryfs_plugin.so
 
 all:

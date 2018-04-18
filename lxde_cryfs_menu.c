@@ -1,7 +1,15 @@
 #include "lxde_cryfs_menu.h"
 #include "lxde_cryfs_mount.h"
 #include "lxde_cryfs_config.h"
+#include "lxde_cryfs_dialog.h"
 
+typedef struct {
+	int index;
+	GtkWidget* item;
+	GtkWidget* mount;
+	GtkWidget* umount;
+	lxde_cryfs_plugin_t* plugin;
+} mounted_t;
 
 void add_menu_separator(GtkWidget *menu){
 	if (!menu) {
@@ -43,16 +51,57 @@ void on_mount_pressed(GtkWidget *item, gpointer userdata) {
 	gtk_widget_show_all(window);
 }
 
-GtkWidget* lxde_cryfs_mouse_menu (lxde_cryfs_plugin_t* plugin) {
-	GtkWidget *menu = gtk_menu_new ();
-	add_menu_item (menu, "Mount..", (GCallback) on_mount_pressed, (gpointer) plugin);
+void on_mount_pressed_info(GtkWidget *item, gpointer userdata) {
+	(void)item;
+	const gchar* basedir = 0;
+	const gchar* mountpoint = 0;
+	mounted_t* m = (mounted_t*) userdata;
+
+	if (!lxde_cryfs_info_fs (&m->plugin->settings, &basedir, &mountpoint, m->index)) {
+		lxde_cryfs_error_dialog (0, "Unable to mount FS.");
+	} else {
+		lxde_cryfs_info_dialog (0, "Mounted.");
+	}
+}
+
+void on_umount_pressed(GtkWidget *item, gpointer userdata) {
+	(void)item;
+	mounted_t* m = (mounted_t*) userdata;
+	lxde_cryfs_remove_fs (&m->plugin->settings, m->index);
+}
+
+void free_item(GtkWidget* item, gpointer userdata) {
+	gtk_widget_destroy (item);
+}
+
+void lxde_cryfs_mouse_menu (lxde_cryfs_plugin_t* plugin) {
+	if (!plugin->menu) {		
+		GtkWidget *menu = gtk_menu_new ();
+		plugin->menu = menu;
+	} else {
+        gtk_container_foreach (GTK_CONTAINER(plugin->menu), (GtkCallback)free_item, NULL);
+	}
+
+	add_menu_item (plugin->menu, "Mount..", G_CALLBACK(on_mount_pressed), (gpointer) plugin);
 	int max = 0;
-	if (!config_setting_lookup_int (plugin->settings.config, LXDE_CRYFS_SETTING_LAST_INDEX, &max) && max > 0) {
-		add_menu_separator (menu);
+	if (config_setting_lookup_int (plugin->settings.config, LXDE_CRYFS_SETTING_LAST_INDEX, &max) == CONFIG_TRUE && max > 0) {
+		add_menu_separator (plugin->menu);
 		for (int i = 0; i < max; ++i) {
-			GtkWidget* item = add_menu_item (menu, lxde_cryfs_get_name (&plugin->settings, i), 0, 0);
+			const char* name = lxde_cryfs_get_name (&plugin->settings, i);
+			if (!name) {
+				continue;
+			}
+			mounted_t* m = g_new0 (mounted_t, 1);
+			if (!name) {
+				continue;
+			}
+			m->index = i;
+			m->plugin = plugin;
+			gchar* item_name = g_strdup_printf("fs: %s", name);
+			GtkWidget* item = add_menu_item (plugin->menu, item_name, G_CALLBACK(on_umount_pressed), (gpointer) m);
+			g_free (item_name);
+			m->item = item;
 			//add_mount_umount (item);
 		}
 	}
-	return menu;
 }

@@ -20,15 +20,22 @@ gchar *lxde_cryfs_folder_dialog(const char* default_path) {
 	return path;
 }
 
-void lxde_cryfs_error_dialog(GtkWidget *window, const char* error_message) {
+void lxde_cryfs_error_dialog(GtkWidget *window, const char* message) {
 
 	GtkWidget *dialog;
-	dialog = gtk_message_dialog_new (GTK_WINDOW(window),
-						GTK_DIALOG_DESTROY_WITH_PARENT,
-						GTK_MESSAGE_ERROR,
-						GTK_BUTTONS_OK,
-						error_message);
+	dialog = gtk_message_dialog_new (GTK_WINDOW(window), window ? GTK_DIALOG_DESTROY_WITH_PARENT : GTK_DIALOG_MODAL, 
+									GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, message);
 	gtk_window_set_title(GTK_WINDOW (dialog), "Error");
+	gtk_dialog_run (GTK_DIALOG(dialog));
+	gtk_widget_destroy (dialog);
+}
+
+void lxde_cryfs_info_dialog(GtkWidget *window, const char* message) {
+
+	GtkWidget *dialog;
+	dialog = gtk_message_dialog_new (GTK_WINDOW(window), window ? GTK_DIALOG_DESTROY_WITH_PARENT : GTK_DIALOG_MODAL, 
+									GTK_MESSAGE_INFO, GTK_BUTTONS_OK, message);
+	gtk_window_set_title(GTK_WINDOW (dialog), "Info");
 	gtk_dialog_run (GTK_DIALOG(dialog));
 	gtk_widget_destroy (dialog);
 }

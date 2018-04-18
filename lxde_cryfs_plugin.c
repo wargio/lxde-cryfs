@@ -62,10 +62,9 @@ GtkWidget *lxde_cryfs_constructor(LXPanel *panel, config_setting_t *settings) {
 gboolean lxde_cryfs_button_press_event(GtkWidget *widget, GdkEventButton *event, LXPanel *panel) {
 	if (event->type == GDK_BUTTON_PRESS && event->button == EVENT_MOUSE_BUTTON_PRESS_RIGHT) {
 		lxde_cryfs_plugin_t* plugin = (lxde_cryfs_plugin_t*) lxpanel_plugin_get_data(widget);
-		GtkWidget* menu = lxde_cryfs_mouse_menu (plugin);
-		gtk_widget_show_all(menu);
-		gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, (event != NULL) ? event->button : 0, gdk_event_get_time((GdkEvent*) event));
-		gtk_widget_destroy(menu);
+		lxde_cryfs_mouse_menu (plugin);
+		gtk_widget_show_all(plugin->menu);
+		gtk_menu_popup(GTK_MENU(plugin->menu), NULL, NULL, NULL, NULL, (event != NULL) ? event->button : 0, gdk_event_get_time((GdkEvent*) event));
 		return TRUE;
 	}
 	return FALSE;

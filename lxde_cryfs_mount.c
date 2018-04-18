@@ -1,7 +1,8 @@
+#include "lxde_cryfs.h"
 #include "lxde_cryfs_mount.h"
 #include "lxde_cryfs_dialog.h"
 #include "lxde_cryfs_config.h"
-#include "lxde_cryfs.h"
+#include "lxde_cryfs_exec.h"
 #include <string.h>
 
 #define LXDE_CRYFS_MOUNT_TITLE "CryFS - Mount"
@@ -53,17 +54,24 @@ void mount_filesystem(GtkWidget *widget, gpointer userdata) {
 		return;
 	}
 	const gchar* basedir  = gtk_label_get_text (GTK_LABEL(object->basedir_label));
-	if (basedir[0] == '?' || strlen(basedir) < 1) {
+	if (basedir[0] == '?' || strlen (basedir) < 1) {
 		lxde_cryfs_error_dialog (object->window, basedir[0] == '?' ? "Base Directory is invalid." : "Base Directory cannot empty.");
 		return;
 	}
 	const gchar* mountdir = gtk_label_get_text (GTK_LABEL(object->mountdir_label));
-	if (mountdir[0] == '?' || strlen(mountdir) < 1) {
+	if (mountdir[0] == '?' || strlen (mountdir) < 1) {
 		lxde_cryfs_error_dialog (object->window, mountdir[0] == '?' ? "Mount Directory is invalid." : "Mount Directory cannot empty.");
 		return;
 	}
+	const gchar* password = gtk_entry_get_text (GTK_ENTRY(object->password_entry));
 
-	lxde_cryfs_add_fs (object->settings, basedir, mountdir);
+	if (lxde_cryfs_mount (basedir, mountdir, object->cipher, password, blocksize, unmount_idle)) {
+		lxde_cryfs_add_fs (object->settings, basedir, mountdir);
+		lxde_cryfs_info_dialog (object->window, "Mounted.");
+	} else {
+		lxde_cryfs_error_dialog (object->window, "Mount failed.");
+		return;
+	}
 
 	gtk_widget_destroy (GTK_WIDGET(object->window));
 	g_free (object->cipher);

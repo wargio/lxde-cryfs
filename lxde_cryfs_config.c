@@ -1,6 +1,7 @@
 #include "lxde_cryfs_config.h"
 #include <glib.h>
 
+
 gboolean is_numeric(const gchar* str) {
 	if (!str) {
 		return FALSE;
@@ -50,17 +51,17 @@ void set_fs_move_index(lxde_cryfs_settings_t* settings, int index) {
 	const gchar* basedir;
 	const gchar* mountpoint;
 	gchar* setting_name = g_strdup_printf(LXDE_CRYFS_SETTING_FS_NAME, next);
-	if (config_setting_lookup_string (settings->config, setting_name, &name)) {
+	if (config_setting_lookup_string (settings->config, setting_name, &name) != CONFIG_TRUE) {
 		fail = TRUE;
 	}
 	g_free (setting_name);
 	setting_name = g_strdup_printf(LXDE_CRYFS_SETTING_FS_BASE, next);
-	if (config_setting_lookup_string (settings->config, setting_name, &basedir)) {
+	if (config_setting_lookup_string (settings->config, setting_name, &basedir) != CONFIG_TRUE) {
 		fail = TRUE;
 	}
 	g_free (setting_name);
 	setting_name = g_strdup_printf(LXDE_CRYFS_SETTING_FS_MOUNT, next);
-	if (config_setting_lookup_string (settings->config, setting_name, &mountpoint)) {
+	if (config_setting_lookup_string (settings->config, setting_name, &mountpoint) != CONFIG_TRUE) {
 		fail = TRUE;
 	}
 	g_free (setting_name);
@@ -84,7 +85,7 @@ void set_fs_remove_index(lxde_cryfs_settings_t* settings, int index) {
 const gchar* lxde_cryfs_get_name(lxde_cryfs_settings_t* settings, guint index) {
 	const gchar* name;
 	gchar* setting_name = g_strdup_printf(LXDE_CRYFS_SETTING_FS_NAME, index);
-	if (config_setting_lookup_string (settings->config, setting_name, &name)) {
+	if (config_setting_lookup_string (settings->config, setting_name, &name) != CONFIG_TRUE) {
 		g_free (setting_name);
 		return 0;
 	}
@@ -92,9 +93,25 @@ const gchar* lxde_cryfs_get_name(lxde_cryfs_settings_t* settings, guint index) {
 	return name;
 }
 
-void lxde_cryfs_add_fs(lxde_cryfs_settings_t* settings, const gchar* basedir, const gchar* mountpoint){
+int lxde_cryfs_info_fs(lxde_cryfs_settings_t* settings, const gchar** basedir, const gchar** mountpoint, guint index) {
+	gchar* setting_name = g_strdup_printf(LXDE_CRYFS_SETTING_FS_BASE, index);
+	if (config_setting_lookup_string (settings->config, setting_name, basedir) != CONFIG_TRUE) {
+		g_free (setting_name);
+		return 0;
+	}
+	g_free (setting_name);
+	setting_name = g_strdup_printf(LXDE_CRYFS_SETTING_FS_MOUNT, index);
+	if (config_setting_lookup_string (settings->config, setting_name, mountpoint) != CONFIG_TRUE) {
+		g_free (setting_name);
+		return 0;
+	}
+	g_free (setting_name);
+	return 1;
+}
+
+void lxde_cryfs_add_fs(lxde_cryfs_settings_t* settings, const gchar* basedir, const gchar* mountpoint) {
 	int max = 0;
-	if (config_setting_lookup_int (settings->config, LXDE_CRYFS_SETTING_LAST_INDEX, &max)) {
+	if (config_setting_lookup_int (settings->config, LXDE_CRYFS_SETTING_LAST_INDEX, &max) != CONFIG_TRUE) {
 		return;
 	}
 	gchar* name = fs_get_name (basedir);
@@ -105,7 +122,7 @@ void lxde_cryfs_add_fs(lxde_cryfs_settings_t* settings, const gchar* basedir, co
 
 void lxde_cryfs_remove_fs(lxde_cryfs_settings_t* settings, guint index) {
 	int max = 0;
-	if (config_setting_lookup_int (settings->config, LXDE_CRYFS_SETTING_LAST_INDEX, &max) || max < 1 || max <= index) {
+	if (config_setting_lookup_int (settings->config, LXDE_CRYFS_SETTING_LAST_INDEX, &max) != CONFIG_TRUE || max < 1 || max <= index) {
 		return;
 	}
 	max--;
@@ -137,26 +154,26 @@ void lxde_cryfs_update_settings(lxde_cryfs_settings_t* settings) {
 void lxde_cryfs_load_default_settings(lxde_cryfs_settings_t *settings) {
 	int num;
 	const char *str;
-	if (config_setting_lookup_string (settings->config, LXDE_CRYFS_SETTING_DEFAULT_PATH, &str)) {
+	if (config_setting_lookup_string (settings->config, LXDE_CRYFS_SETTING_DEFAULT_PATH, &str) != CONFIG_TRUE) {
 		config_group_set_string (settings->config, LXDE_CRYFS_SETTING_DEFAULT_PATH, "/");
 	}
 
-	if (config_setting_lookup_string (settings->config, LXDE_CRYFS_SETTING_BLOCK_SIZE, &str)) {
+	if (config_setting_lookup_string (settings->config, LXDE_CRYFS_SETTING_BLOCK_SIZE, &str) != CONFIG_TRUE) {
 		config_group_set_string (settings->config, LXDE_CRYFS_SETTING_BLOCK_SIZE, "32768");
 	}
 
-	if (config_setting_lookup_string (settings->config, LXDE_CRYFS_SETTING_UNMOUNT_IDLE, &str)) {
+	if (config_setting_lookup_string (settings->config, LXDE_CRYFS_SETTING_UNMOUNT_IDLE, &str) != CONFIG_TRUE) {
 		config_group_set_string (settings->config, LXDE_CRYFS_SETTING_UNMOUNT_IDLE, "");
 	}
 
-	if (config_setting_lookup_int (settings->config, LXDE_CRYFS_SETTING_LAST_INDEX, &num)) {
+	if (config_setting_lookup_int (settings->config, LXDE_CRYFS_SETTING_LAST_INDEX, &num) != CONFIG_TRUE) {
 		config_group_set_int (settings->config, LXDE_CRYFS_SETTING_LAST_INDEX, 0);
 	}
 }
 
 const char* lxde_cryfs_get_settings(lxde_cryfs_settings_t *settings, const gchar* setting_name) {
 	const char *str = 0;
-	if (config_setting_lookup_string (settings->config, setting_name, &str)) {
+	if (config_setting_lookup_string (settings->config, setting_name, &str) != CONFIG_TRUE) {
 		// should never happen
 		return 0;
 	}

@@ -2,6 +2,6 @@
 #define LXDE_CRYFS_MENU_H
 #include "lxde_cryfs_config.h"
 
-GtkWidget* lxde_cryfs_mouse_menu(lxde_cryfs_plugin_t* plugin);
+void lxde_cryfs_mouse_menu(lxde_cryfs_plugin_t* plugin);
 
 #endif
