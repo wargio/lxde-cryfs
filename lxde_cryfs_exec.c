@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-int lxde_cryfs_mount (const char* base, const char* mount, const char* cipher, const char* password, const char* blocksize, const char* unmount_idle) {
+int lxde_cryfs_exec_mount (const char* base, const char* mount, const char* cipher, const char* password, const char* blocksize, const char* unmount_idle) {
 	char prompt[1024] = {0};
 	FILE *shell = 0;
 	if (!blocksize || strlen (blocksize) < 1) {
@@ -27,7 +27,7 @@ int lxde_cryfs_mount (const char* base, const char* mount, const char* cipher, c
 	return 1;
 }
 
-int lxde_cryfs_umount (const char* mount) {
+int lxde_cryfs_exec_umount (const char* mount) {
 	char prompt[1024] = {0};
 	FILE *shell = 0;
 	if (!mount || strlen (mount) < 1) {

@@ -2,6 +2,9 @@
 #include "lxde_cryfs_mount.h"
 #include "lxde_cryfs_config.h"
 #include "lxde_cryfs_dialog.h"
+#include "lxde_cryfs_exec.h"
+
+GtkWidget *lxde_cryfs_password_window (lxde_cryfs_settings_t *settings, const char* base, const char* mount);
 
 typedef struct {
 	int index;
@@ -37,18 +40,11 @@ void add_submenu(GtkWidget* item, GtkWidget* submenu) {
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), submenu);
 }
 
-void add_mount_umount(GtkWidget* item) {
-	if (!item) {
-		return;
-	}
-	GtkWidget* submenu = 0;	
-}
-
 void on_mount_pressed(GtkWidget *item, gpointer userdata) {
 	(void)item;
 	lxde_cryfs_plugin_t* plugin = (lxde_cryfs_plugin_t*) userdata;
 	GtkWidget *window = lxde_cryfs_mount_window (&plugin->settings);
-	gtk_widget_show_all(window);
+	gtk_widget_show_all (window);
 }
 
 void on_mount_pressed_info(GtkWidget *item, gpointer userdata) {
@@ -60,14 +56,41 @@ void on_mount_pressed_info(GtkWidget *item, gpointer userdata) {
 	if (!lxde_cryfs_info_fs (&m->plugin->settings, &basedir, &mountpoint, m->index)) {
 		lxde_cryfs_error_dialog (0, "Unable to mount FS.");
 	} else {
-		lxde_cryfs_info_dialog (0, "Mounted.");
+		GtkWidget *window = lxde_cryfs_password_window (&m->plugin->settings, basedir, mountpoint);
+		gtk_widget_show_all (window);
 	}
 }
 
 void on_umount_pressed(GtkWidget *item, gpointer userdata) {
 	(void)item;
+	const gchar* basedir = 0;
+	const gchar* mountpoint = 0;
+	mounted_t* m = (mounted_t*) userdata;
+	if (!lxde_cryfs_info_fs (&m->plugin->settings, &basedir, &mountpoint, m->index) || !lxde_cryfs_exec_umount (mountpoint)) {
+		lxde_cryfs_error_dialog (0, "Unable to mount FS.");
+	} else {
+		lxde_cryfs_info_dialog (0, "Umounted.");
+	}
+	//lxde_cryfs_remove_fs (&m->plugin->settings, m->index);
+}
+
+void on_remove_pressed(GtkWidget *item, gpointer userdata) {
+	(void)item;
 	mounted_t* m = (mounted_t*) userdata;
 	lxde_cryfs_remove_fs (&m->plugin->settings, m->index);
+}
+
+GtkWidget* add_mount_umount_menu(GtkWidget* item, mounted_t* m) {
+	if (!item) {
+		return 0;
+	}
+	GtkWidget* submenu = gtk_menu_new ();	
+	add_submenu (item, submenu);
+	add_menu_item (submenu, "Mount", G_CALLBACK(on_mount_pressed_info), (gpointer) m);
+	add_menu_item (submenu, "Umount", G_CALLBACK(on_umount_pressed), (gpointer) m);
+	add_menu_separator (submenu);
+	add_menu_item (submenu, "Remove this entry.", G_CALLBACK(on_remove_pressed), (gpointer) m);
+	return submenu;
 }
 
 void free_item(GtkWidget* item, gpointer userdata) {
@@ -98,7 +121,8 @@ void lxde_cryfs_mouse_menu (lxde_cryfs_plugin_t* plugin) {
 			m->index = i;
 			m->plugin = plugin;
 			gchar* item_name = g_strdup_printf("fs: %s", name);
-			GtkWidget* item = add_menu_item (plugin->menu, item_name, G_CALLBACK(on_umount_pressed), (gpointer) m);
+			GtkWidget* item = add_menu_item (plugin->menu, item_name, /*G_CALLBACK(on_umount_pressed), (gpointer) m*/0 ,0);
+			add_mount_umount_menu (item, m);
 			g_free (item_name);
 			m->item = item;
 			//add_mount_umount (item);

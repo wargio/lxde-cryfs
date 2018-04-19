@@ -4,5 +4,6 @@
 #include "lxde_cryfs.h"
 
 GtkWidget *lxde_cryfs_mount_window (lxde_cryfs_settings_t *settings);
+GtkWidget *lxde_cryfs_password_window (lxde_cryfs_settings_t *settings, const char* base, const char* mount);
 
 #endif

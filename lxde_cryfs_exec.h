@@ -6,8 +6,8 @@ typedef struct {
 	char** entry;
 } paths_t;
 
-int lxde_cryfs_mount (const char* base, const char* mount, const char* cipher, const char* password, const char* blocksize, const char* unmount_idle);
-int lxde_cryfs_umount (const char* mount);
-int lxde_cryfs_mounted_fs (paths_t* path);
+int lxde_cryfs_exec_mount (const char* base, const char* mount, const char* cipher, const char* password, const char* blocksize, const char* unmount_idle);
+int lxde_cryfs_exec_umount (const char* mount);
+int lxde_cryfs_exec_mounted_fs (paths_t* path);
 
 #endif
