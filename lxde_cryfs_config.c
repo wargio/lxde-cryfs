@@ -1,6 +1,13 @@
 #include "lxde_cryfs_config.h"
 #include <glib.h>
 
+#ifndef config_group_set_boolean
+#define config_group_set_boolean config_group_set_int 
+#endif
+
+#ifndef config_setting_lookup_boolean
+#define config_setting_lookup_boolean config_setting_lookup_int
+#endif
 
 gboolean is_numeric(const gchar* str) {
 	if (!str) {
@@ -32,15 +39,18 @@ gchar* fs_get_name(const gchar* path) {
 	return name;
 }
 
-void set_fs_at_index(lxde_cryfs_settings_t* settings, const gchar* name, const gchar* basedir, const gchar* mountpoint, int index) {
-	gchar* setting_name = g_strdup_printf(LXDE_CRYFS_SETTING_FS_NAME, index);
+void set_fs_at_index(lxde_cryfs_settings_t* settings, const gchar* name, const gchar* basedir, const gchar* mountpoint, int active, int index) {
+	gchar* setting_name = g_strdup_printf (LXDE_CRYFS_SETTING_FS_NAME, index);
 	config_group_set_string (settings->config, setting_name, name);
 	g_free (setting_name);
-	setting_name = g_strdup_printf(LXDE_CRYFS_SETTING_FS_BASE, index);
+	setting_name = g_strdup_printf (LXDE_CRYFS_SETTING_FS_BASE, index);
 	config_group_set_string (settings->config, setting_name, basedir);
 	g_free (setting_name);
-	setting_name = g_strdup_printf(LXDE_CRYFS_SETTING_FS_MOUNT, index);
+	setting_name = g_strdup_printf (LXDE_CRYFS_SETTING_FS_MOUNT, index);
 	config_group_set_string (settings->config, setting_name, mountpoint);
+	g_free (setting_name);
+	setting_name = g_strdup_printf (LXDE_CRYFS_SETTING_FS_ACTIVE, index);
+	config_group_set_boolean (settings->config, setting_name, active);
 	g_free (setting_name);
 }
 
@@ -50,41 +60,50 @@ void set_fs_move_index(lxde_cryfs_settings_t* settings, int index) {
 	const gchar* name;
 	const gchar* basedir;
 	const gchar* mountpoint;
-	gchar* setting_name = g_strdup_printf(LXDE_CRYFS_SETTING_FS_NAME, next);
+	int active;
+	gchar* setting_name = g_strdup_printf (LXDE_CRYFS_SETTING_FS_NAME, next);
 	if (config_setting_lookup_string (settings->config, setting_name, &name) != CONFIG_TRUE) {
 		fail = TRUE;
 	}
 	g_free (setting_name);
-	setting_name = g_strdup_printf(LXDE_CRYFS_SETTING_FS_BASE, next);
+	setting_name = g_strdup_printf (LXDE_CRYFS_SETTING_FS_BASE, next);
 	if (config_setting_lookup_string (settings->config, setting_name, &basedir) != CONFIG_TRUE) {
 		fail = TRUE;
 	}
 	g_free (setting_name);
-	setting_name = g_strdup_printf(LXDE_CRYFS_SETTING_FS_MOUNT, next);
+	setting_name = g_strdup_printf (LXDE_CRYFS_SETTING_FS_MOUNT, next);
 	if (config_setting_lookup_string (settings->config, setting_name, &mountpoint) != CONFIG_TRUE) {
 		fail = TRUE;
 	}
 	g_free (setting_name);
+	setting_name = g_strdup_printf (LXDE_CRYFS_SETTING_FS_ACTIVE, next);
+	if (config_setting_lookup_boolean (settings->config, setting_name, &active) != CONFIG_TRUE) {
+		fail = TRUE;
+	}
+	g_free (setting_name);
 	if (!fail) {
-		set_fs_at_index (settings, name, basedir, mountpoint, index);
+		set_fs_at_index (settings, name, basedir, mountpoint, active, index);
 	}
 }
 
 void set_fs_remove_index(lxde_cryfs_settings_t* settings, int index) {
-	gchar* setting_name = g_strdup_printf(LXDE_CRYFS_SETTING_FS_NAME, index);
+	gchar* setting_name = g_strdup_printf (LXDE_CRYFS_SETTING_FS_NAME, index);
 	config_setting_remove (settings->config, setting_name);
 	g_free (setting_name);
-	setting_name = g_strdup_printf(LXDE_CRYFS_SETTING_FS_BASE, index);
+	setting_name = g_strdup_printf (LXDE_CRYFS_SETTING_FS_BASE, index);
 	config_setting_remove (settings->config, setting_name);
 	g_free (setting_name);
-	setting_name = g_strdup_printf(LXDE_CRYFS_SETTING_FS_MOUNT, index);
+	setting_name = g_strdup_printf (LXDE_CRYFS_SETTING_FS_MOUNT, index);
+	config_setting_remove (settings->config, setting_name);
+	g_free (setting_name);
+	setting_name = g_strdup_printf (LXDE_CRYFS_SETTING_FS_ACTIVE, index);
 	config_setting_remove (settings->config, setting_name);
 	g_free (setting_name);
 }
 
 const gchar* lxde_cryfs_get_name(lxde_cryfs_settings_t* settings, guint index) {
 	const gchar* name;
-	gchar* setting_name = g_strdup_printf(LXDE_CRYFS_SETTING_FS_NAME, index);
+	gchar* setting_name = g_strdup_printf (LXDE_CRYFS_SETTING_FS_NAME, index);
 	if (config_setting_lookup_string (settings->config, setting_name, &name) != CONFIG_TRUE) {
 		g_free (setting_name);
 		return 0;
@@ -93,15 +112,21 @@ const gchar* lxde_cryfs_get_name(lxde_cryfs_settings_t* settings, guint index) {
 	return name;
 }
 
-int lxde_cryfs_info_fs(lxde_cryfs_settings_t* settings, const gchar** basedir, const gchar** mountpoint, guint index) {
-	gchar* setting_name = g_strdup_printf(LXDE_CRYFS_SETTING_FS_BASE, index);
+int lxde_cryfs_info_fs(lxde_cryfs_settings_t* settings, const gchar** basedir, const gchar** mountpoint, int* active, guint index) {
+	gchar* setting_name = g_strdup_printf (LXDE_CRYFS_SETTING_FS_BASE, index);
 	if (config_setting_lookup_string (settings->config, setting_name, basedir) != CONFIG_TRUE) {
 		g_free (setting_name);
 		return 0;
 	}
 	g_free (setting_name);
-	setting_name = g_strdup_printf(LXDE_CRYFS_SETTING_FS_MOUNT, index);
+	setting_name = g_strdup_printf (LXDE_CRYFS_SETTING_FS_MOUNT, index);
 	if (config_setting_lookup_string (settings->config, setting_name, mountpoint) != CONFIG_TRUE) {
+		g_free (setting_name);
+		return 0;
+	}
+	g_free (setting_name);
+	setting_name = g_strdup_printf (LXDE_CRYFS_SETTING_FS_ACTIVE, index);
+	if (config_setting_lookup_boolean (settings->config, setting_name, active) != CONFIG_TRUE) {
 		g_free (setting_name);
 		return 0;
 	}
@@ -109,13 +134,13 @@ int lxde_cryfs_info_fs(lxde_cryfs_settings_t* settings, const gchar** basedir, c
 	return 1;
 }
 
-void lxde_cryfs_add_fs(lxde_cryfs_settings_t* settings, const gchar* basedir, const gchar* mountpoint) {
+void lxde_cryfs_add_fs(lxde_cryfs_settings_t* settings, const gchar* basedir, const gchar* mountpoint, int active) {
 	int max = 0;
 	if (config_setting_lookup_int (settings->config, LXDE_CRYFS_SETTING_LAST_INDEX, &max) != CONFIG_TRUE) {
 		return;
 	}
 	gchar* name = fs_get_name (basedir);
-	set_fs_at_index (settings, name, basedir, mountpoint, max);
+	set_fs_at_index (settings, name, basedir, mountpoint, active, max);
 	g_free (name);
 	config_group_set_int (settings->config, LXDE_CRYFS_SETTING_LAST_INDEX, max + 1);
 }
@@ -168,6 +193,13 @@ void lxde_cryfs_load_default_settings(lxde_cryfs_settings_t *settings) {
 
 	if (config_setting_lookup_int (settings->config, LXDE_CRYFS_SETTING_LAST_INDEX, &num) != CONFIG_TRUE) {
 		config_group_set_int (settings->config, LXDE_CRYFS_SETTING_LAST_INDEX, 0);
+	} else {
+		// after a reboot all the mounted dirs will be umounted
+		for (int i = 0; i < num; ++i) {
+			gchar* setting_name = g_strdup_printf (LXDE_CRYFS_SETTING_FS_ACTIVE, i);
+			config_group_set_boolean (settings->config, setting_name, FALSE);
+			g_free (setting_name);
+		}
 	}
 }
 
@@ -178,4 +210,18 @@ const char* lxde_cryfs_get_settings(lxde_cryfs_settings_t *settings, const gchar
 		return 0;
 	}
 	return str;
+}
+
+void lxde_cryfs_set_active(lxde_cryfs_settings_t *settings, int active, int index) {
+	gchar* setting_name = g_strdup_printf (LXDE_CRYFS_SETTING_FS_ACTIVE, index);
+	config_group_set_boolean (settings->config, setting_name, active);
+	g_free (setting_name);
+}
+
+int lxde_cryfs_get_active(lxde_cryfs_settings_t *settings, int index) {
+	int active = FALSE;
+	gchar* setting_name = g_strdup_printf (LXDE_CRYFS_SETTING_FS_ACTIVE, index);
+	config_setting_lookup_boolean (settings->config, setting_name, &active);
+	g_free (setting_name);
+	return active;
 }

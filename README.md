@@ -1,7 +1,7 @@
 lxde-cryfs applet
 =================
 
-WIP.
+RC 0.1
 
 ## Install
 

@@ -15,6 +15,7 @@ typedef struct {
 	GtkWidget *mountdir_label;
 	GtkWidget *password_entry;
 	lxde_cryfs_settings_t *settings;
+	int index;
 } lxde_cryfs_mount_t;
 
 void combo_selected(GtkWidget *widget, gpointer userdata) { 
@@ -67,7 +68,10 @@ void mount_filesystem(GtkWidget *widget, gpointer userdata) {
 
 	if (lxde_cryfs_exec_mount (basedir, mountdir, object->cipher, password, blocksize, unmount_idle)) {
 		if (object->is_new) {
-			lxde_cryfs_add_fs (object->settings, basedir, mountdir);
+			lxde_cryfs_add_fs (object->settings, basedir, mountdir, TRUE);
+		} else {
+			printf("CALLED\n");
+			lxde_cryfs_set_active (object->settings, TRUE, object->index);
 		}
 		lxde_cryfs_info_dialog (object->window, "Mounted.");
 	} else {
@@ -109,7 +113,11 @@ GtkWidget *lxde_cryfs_mount_window(lxde_cryfs_settings_t *settings) {
 	GtkWidget *halign;
 	GtkWidget *valign;
 
+	
 	lxde_cryfs_mount_t *object = g_new0 (lxde_cryfs_mount_t, 1);
+	if (!object) {
+		return 0;
+	}
 	object->settings = settings;
 
 	window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
@@ -120,6 +128,8 @@ GtkWidget *lxde_cryfs_mount_window(lxde_cryfs_settings_t *settings) {
 
 	object->window = window;
 	object->is_new = TRUE;
+	fprintf(stderr, "ME\n"); fflush(stderr);
+//	object->index = -1;
 
 	vbox = gtk_vbox_new (FALSE, 5);
 
@@ -144,6 +154,9 @@ GtkWidget *lxde_cryfs_mount_window(lxde_cryfs_settings_t *settings) {
 	mountdir_label = gtk_label_new("?");
 	password_entry = gtk_entry_new();
 	cipher_combo = gtk_combo_box_new_text ();
+
+	// is password field
+	gtk_entry_set_visibility (GTK_ENTRY(password_entry), FALSE);
 
 	object->cipher = g_strdup_printf ("aes-256-gcm");
 	gtk_combo_box_append_text (GTK_COMBO_BOX(cipher_combo), "aes-256-gcm");
@@ -202,7 +215,7 @@ GtkWidget *lxde_cryfs_mount_window(lxde_cryfs_settings_t *settings) {
 	return window;
 }
 
-GtkWidget *lxde_cryfs_password_window(lxde_cryfs_settings_t *settings, const char* base, const char* mount) {
+GtkWidget *lxde_cryfs_password_window(lxde_cryfs_settings_t *settings, const char* base, const char* mount, int index) {
 	GtkWidget *window;
 	GtkWidget *mount_button;
 	GtkWidget *cancel_button;
@@ -233,6 +246,7 @@ GtkWidget *lxde_cryfs_password_window(lxde_cryfs_settings_t *settings, const cha
 
 	object->window = window;
 	object->is_new = FALSE;
+	object->index = index;
 
 	vbox = gtk_vbox_new (FALSE, 5);
 
@@ -253,6 +267,9 @@ GtkWidget *lxde_cryfs_password_window(lxde_cryfs_settings_t *settings, const cha
 	mountdir_label = gtk_label_new(mount);
 	password_entry = gtk_entry_new();
 	cipher_combo = gtk_combo_box_new_text ();
+
+	// is password field
+	gtk_entry_set_visibility (GTK_ENTRY(password_entry), FALSE);
 
 	object->cipher = g_strdup_printf ("aes-256-gcm");
 	gtk_combo_box_append_text (GTK_COMBO_BOX(cipher_combo), "aes-256-gcm");
